@@ -1,49 +1,13 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+#include <cblas.h>
 #include "../ODE_solver/ODE_solver.h"
 
 int hit_detection(double state[2][8], float dt, float radius);
-
-int main(void)
-{
-    double state_1[2][8] = {
-        {0.0, 1.5, 0.1, 0.1, 0.1, 0.0, -0.5, 0.0},
-        {0.0, 1.5, 0.1, 0.1, 0.1, 0.0, -0.5, 0.0}
-    };
-
-    double state_2[2][8] = {
-        {0.0, 2.0, 0.1, 0.1, 0.1, -0.5, 0.0, 0.0},
-        {0.0, 2.0, 0.1, 0.1, 0.1, -0.5, 0.0, 0.0}
-    };
-
-    double state_3[2][8] = {
-        {0.0, 2.0, 0.1, 0.1, 0.1, 0.5, 0.0, 0.0},
-        {0.0, 2.0, 0.1, 0.1, 0.1, 0.5, 0.0, 0.0}
-    };
-
-    float dt = 0.1;
-    float tmax = 10;
-    float radius = 2.0;
-
-    if(ray_cast(state_1, dt, tmax, radius) == 1) {
-        printf("Discooo \n");
-    } else {
-        printf("no lights, no music \n");
-    }
-    if(ray_cast(state_2, dt, tmax, radius) == 2) {
-        printf("Black Hole tiime.\n");
-    } else {
-        printf("black hole sun wont you come \n");
-    }
-    if(ray_cast(state_3, dt, tmax, radius) == 0) {
-        printf("Buh-bye");
-    } else {
-        printf("why arent you running");
-    }
-
-    return 0;
-}
+void convert_to_spherical(double state[8], double camera[3]);
+void ray_engine(int px, double (*output)[px][8], double camera[3], double screen_dist);
 
 void cartesian_rays(int px, double output[px][px][8], double camera[3], double screen_dist)
 {
@@ -74,30 +38,85 @@ void cartesian_rays(int px, double output[px][px][8], double camera[3], double s
             output[i][j][7] = yz_coord[j] - camera[2];
         }
     }
-
 }
 
-void convert_to_spherical(int px, double output[px][px][8], double camera[3])
-{
-    //convert to (flat) spherical coordinates
+void matrix_map(double matrix[3][3], double vector[3])
+{   
+    double vector_old[3] = {vector[0], vector[1], vector[2]};
+    vector[0] = 0; vector[1] = 0; vector[2] = 0;
+    for(int i = 0; i < 3; i++)
+    {
+        for(int j = 0; j < 3; j++)
+        {
+            vector[i] += matrix[i][j] * vector_old[j];
+        }
+    }
 }
 
-double calculate_speed(double vel_x, double vel_y, double vel_z) //should be curved ST version!
-{
-    return pow(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z, 0.5);
+//converts a Cartesian state to (flat) spherical coordinates
+void convert_to_spherical(double state[8], double camera[3])
+{   
+    //rotate about the y-axis to standard Cartesian coordinates
+    double inc = camera[1] - 1.570;
+    double Rotation[3][3] = {{cos(inc), 0, -sin(inc)}, {0, 1, 0}, {sin(inc), 0, cos(inc)}};
+    double pos[3] = {state[1],state[2],state[3]};
+    double vel[3] = {state[5],state[6],state[7]};
+    matrix_map(Rotation, pos);
+    matrix_map(Rotation, vel);
+
+    //transform to (flat) spherical coordinates
+    double r = pow(pos[0]*pos[0] + pos[1]*pos[1] + pos[2]*pos[2], 0.5);
+    double theta = acos(pos[2] / r);
+    double phi = pos[1] / fabs(pos[1]) * acos(pos[0] / pow(pos[0]*pos[0] + pos[1]*pos[1], 0.5));
+    double Jacobian[3][3] = {
+        {sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)},
+        {r*cos(theta)*cos(phi), r*cos(theta)*sin(phi), -r*sin(theta)},
+        {-r*sin(theta)*sin(phi), r*sin(theta)*cos(phi), 0}};
+    matrix_map(Jacobian, vel);
+
+    //overwrite input state
+    state[1] = r; state[2] = theta; state[3] = phi;
+    state[5] = vel[0]; state[6] = vel[1]; state[7] = vel[2];
 }
 
-void ray_engine(int px, double output[px][px][8], double camera[3], double screen_dist)
+double calculate_speed(double pos[3], double vel[3])
 {
-    //cartesian_rays(double camera[3], double screen_dist)
-
-    //convert_to_spherical(int px, double output[px][px][8], double camera[3])
+    double spatial_metric[3][3] = {
+        {-1 / (1 - 1/pos[1]), 0, 0},
+        {0, -pos[1]*pos[1], 0},
+        {0, 0, -pos[1]*pos[1] * sin(pos[2])*sin(pos[2])}};
     
+    double vel_0[3] = {vel[0], vel[1], vel[2]};
+    matrix_map(spatial_metric, vel);
+
+    return pow(-vel_0[0]*vel[0] - vel_0[1]*vel[1] - vel_0[2]*vel[2], 0.5);
+}
+
+void ray_engine(int px, double (*output)[px][8], double camera[3], double screen_dist)
+{
+    //generate initial rays in spherical coords
+    cartesian_rays(px, output, camera, screen_dist);
+
+    for(int i = 0; i < px; i++)
+    {
+        for(int j = 0; j < px; j++)
+        {
+            convert_to_spherical(output[i][j], camera);
+        }
+    }
+
     //normalize velocities & make them lightlike
-
-    //double speed = calculate_speed(output[i][j][5], output[i][j][6], output[i][j][7]);
-    
-    //output[i][j][5] = output[i][j][5] / speed;
-    //output[i][j][6] = output[i][j][6] / speed;
-    //output[i][j][7] = output[i][j][7] / speed;
+    for(int i = 0; i < px; i++)
+    {
+        for(int j = 0; j < px; j++)
+        {   
+            double pos[3] = {output[i][j][1], output[i][j][2], output[i][j][3]};
+            double vel[3] = {output[i][j][5], output[i][j][6], output[i][j][7]};
+            double speed = calculate_speed(pos, vel);
+            output[i][j][5] = output[i][j][5] / speed;
+            output[i][j][6] = output[i][j][6] / speed;
+            output[i][j][7] = output[i][j][7] / speed;
+            output[i][j][4] = 1.0;
+        }
+    }
 }
