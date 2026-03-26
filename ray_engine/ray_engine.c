@@ -36,6 +36,8 @@ void cartesian_rays(int px, double output[px][px][8], double camera[3], double s
             //z-coordinate & z-velocity
             output[i][j][3] = yz_coord[j];
             output[i][j][7] = yz_coord[j] - camera[2];
+
+            //normalize velocities?
         }
     }
 }
@@ -116,7 +118,8 @@ void ray_engine(int px, double (*output)[px][8], double camera[3], double screen
             output[i][j][5] = output[i][j][5] / speed;
             output[i][j][6] = output[i][j][6] / speed;
             output[i][j][7] = output[i][j][7] / speed;
-            output[i][j][4] = 1.0;
+            output[i][j][0] = 0.0;
+            output[i][j][4] = 1.0 / pow(1 - 1/pos[0], 0.5);
         }
     }
 }

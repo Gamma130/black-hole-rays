@@ -1,20 +1,29 @@
 CC = gcc
-CFLAGS = -std=c99 -Wall -lm -lSDL2
+CFLAGS = -std=c99 -Wall
+LIBS = -lm -lSDL2
 
-SRC = main.c \
-	  ODE_solver/ODE_solver.c \
-      ODE_solver/ODE_function.c \
-      ray_engine/ray_cast.c \
-      ray_engine/ray_engine.c \
-	  display/display.c
+SRC = \
+	ODE_solver/ODE_solver.c \
+	ODE_solver/ODE_function.c \
+	ray_engine/ray_cast.c \
+	ray_engine/ray_engine.c \
+	display/display.c
+
+MAIN = main.c
+TEST = tests/test_ray_engine.c
 
 TARGET = output_executable
+TEST_TARGET = test_executable
 
 all:
-	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
+	$(CC) $(CFLAGS) $(MAIN) $(SRC) -o $(TARGET) $(LIBS)
 
 run: all
 	./$(TARGET)
 
+test:
+	$(CC) $(CFLAGS) $(TEST) $(SRC) -o $(TEST_TARGET) $(LIBS)
+	./$(TEST_TARGET)
+
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(TEST_TARGET)

@@ -3,6 +3,6 @@
 
 #define CELL 10
 
-void display(int px, bool grid[px][px]);
+void display(int px, int grid[px][px]);
 
 #endif

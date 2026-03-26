@@ -3,7 +3,7 @@
 #include "./display.h"
 
 
-void display(int px, bool grid[px][px])
+void display(int px, int grid[px][px])
 {
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -38,7 +38,6 @@ void display(int px, bool grid[px][px])
                     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
                 else
                     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-
                 SDL_Rect r = {
                     x * CELL,
                     y * CELL,

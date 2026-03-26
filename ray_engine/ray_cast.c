@@ -60,5 +60,5 @@ int ray_cast(double state[2][8], float dt, float tmax, float radius)
     }
 
     // if no hit: return 0
-    return 0;    
+    return 0;
 }
