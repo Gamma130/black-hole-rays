@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=c99 -Wall
-LIBS = -lm -lSDL2
+LIBS = -lm -lSDL2 -lSDL2_image
 
 SRC = \
 	ODE_solver/ODE_solver.c \

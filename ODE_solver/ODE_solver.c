@@ -20,11 +20,21 @@ void ODE_solver(double state[2][8], float dt)
     update(state, dt);
 }
 
-void update(double state[2][8], float dt){
-    double dX[8];
-    ODE_function(state[0], dX);
+void update(double state[2][8], float dt) //Runge-Kutta 2
+{
+    double dX1[8];
+    ODE_function(state[0], dX1);
 
-    for (int i = 0; i < 8; i++) {
-        state[1][i] = state[0][i] + dt * dX[i]; //euler
+    for (int i = 0; i < 8; i++)
+    {
+        state[1][i] = state[0][i] + dt * dX1[i]; //euler step
+    }
+
+    double dX2[8];
+    ODE_function(state[1], dX2);
+
+    for (int i = 0; i < 8; i++)
+    {     
+        state[1][i] = state[0][i] + dt/2.0 * (dX1[i] + dX2[i]);
     }
 }

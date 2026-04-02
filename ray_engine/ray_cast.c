@@ -6,7 +6,9 @@
 
 int sign_flip(double state[2][8])
 {
-    if (state[0][2] * state[1][2] < 0) {
+    double angle_prev = state[0][2] - 1.5708;
+    double angle_new = state[1][2] - 1.5708;
+    if (angle_prev * angle_new <= 0) {
         return 1;
     }
     return 0;
@@ -28,7 +30,7 @@ int hit_detection(double state[2][8], float dt, float radius)
         }
     }
 
-    if (state[0][1] < radius){
+    if (state[0][1] < 1+radius){
         return 1;
     }
     return 0;
@@ -40,15 +42,16 @@ int ray_cast(double state[2][8], float dt, float tmax, float radius)
     for(int i = 0; i <= tmax/dt; i++)
     {
         ODE_solver(state, dt);
+        // printf("%f", state[1][1]);
 
-        //  if radius smaller than 1: return 0
+        // if radius smaller than 1: return 0
         if(state[1][1] <= 1)
         {   
-            return 2;
+            return 0;
         }
         
         //  if sign_flip: call hit_detection!
-        if(state[0][2] * state[1][2] <= 0)
+        if(sign_flip(state))
         {
             //  if hit: return 1
             if (hit_detection(state, dt, radius))

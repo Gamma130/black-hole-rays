@@ -9,6 +9,11 @@ int hit_detection(double state[2][8], float dt, float radius);
 void convert_to_spherical(double state[8], double camera[3]);
 void ray_engine(int px, double (*output)[px][8], double camera[3], double screen_dist);
 
+double flat_speed(double vel[3])
+{
+    return pow(vel[0]*vel[0] + vel[1]*vel[1] + vel[2]*vel[2], 0.5);
+}
+
 void cartesian_rays(int px, double output[px][px][8], double camera[3], double screen_dist)
 {
     //determine screen size & pixel size
@@ -32,12 +37,17 @@ void cartesian_rays(int px, double output[px][px][8], double camera[3], double s
             output[i][j][5] = x_coord - camera[0];
             //y-coordinate & y-velocity
             output[i][j][2] = yz_coord[i];
-            output[i][j][6] = yz_coord[i] - camera[1];
+            output[i][j][6] = yz_coord[i];
             //z-coordinate & z-velocity
             output[i][j][3] = yz_coord[j];
-            output[i][j][7] = yz_coord[j] - camera[2];
+            output[i][j][7] = yz_coord[j];
 
-            //normalize velocities?
+            //normalize velocities (maybe do after converting to spherical?)
+            double vel[3] = {output[i][j][5], output[i][j][6], output[i][j][7]};
+            double speed = flat_speed(vel);
+            output[i][j][5] = output[i][j][5] / speed;
+            output[i][j][6] = output[i][j][6] / speed;
+            output[i][j][7] = output[i][j][7] / speed;
         }
     }
 }
@@ -81,17 +91,17 @@ void convert_to_spherical(double state[8], double camera[3])
     state[5] = vel[0]; state[6] = vel[1]; state[7] = vel[2];
 }
 
-double calculate_speed(double pos[3], double vel[3])
+double curved_speed(double pos[3], double vel[3])
 {
     double spatial_metric[3][3] = {
-        {-1 / (1 - 1/pos[1]), 0, 0},
-        {0, -pos[1]*pos[1], 0},
-        {0, 0, -pos[1]*pos[1] * sin(pos[2])*sin(pos[2])}};
+        {-1 / (1 - 1/pos[0]), 0, 0},
+        {0, -pos[0]*pos[0], 0},
+        {0, 0, -pos[0]*pos[0] * sin(pos[1])*sin(pos[1])}};
     
     double vel_0[3] = {vel[0], vel[1], vel[2]};
     matrix_map(spatial_metric, vel);
 
-    return pow(-vel_0[0]*vel[0] - vel_0[1]*vel[1] - vel_0[2]*vel[2], 0.5);
+    return -vel_0[0]*vel[0] - vel_0[1]*vel[1] - vel_0[2]*vel[2];
 }
 
 void ray_engine(int px, double (*output)[px][8], double camera[3], double screen_dist)
@@ -107,19 +117,18 @@ void ray_engine(int px, double (*output)[px][8], double camera[3], double screen
         }
     }
 
-    //normalize velocities & make them lightlike
+    //set time components
     for(int i = 0; i < px; i++)
     {
         for(int j = 0; j < px; j++)
         {   
+            output[i][j][0] = 0.0;
+
+            //lightlike condition
             double pos[3] = {output[i][j][1], output[i][j][2], output[i][j][3]};
             double vel[3] = {output[i][j][5], output[i][j][6], output[i][j][7]};
-            double speed = calculate_speed(pos, vel);
-            output[i][j][5] = output[i][j][5] / speed;
-            output[i][j][6] = output[i][j][6] / speed;
-            output[i][j][7] = output[i][j][7] / speed;
-            output[i][j][0] = 0.0;
-            output[i][j][4] = 1.0 / pow(1 - 1/pos[0], 0.5);
+            double speed = curved_speed(pos, vel);
+            output[i][j][4] = pow(speed / (1 - 1/pos[0]), 0.5);
         }
     }
 }

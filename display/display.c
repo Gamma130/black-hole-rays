@@ -1,56 +1,96 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <stdbool.h>
 #include "./display.h"
 
+void rotate_image(int px, int grid[px][px]){
+    for (int i = 0; i < px; i++) {
+        for (int j = i + 1; j < px; j++) {
+            int temp = grid[i][j];
+            grid[i][j] = grid[j][i];
+            grid[j][i] = temp;
+        }
+    }
+}
 
 void display(int px, int grid[px][px])
 {
-    SDL_Init(SDL_INIT_VIDEO);
+    rotate_image(px, grid);
+     SDL_Init(SDL_INIT_VIDEO);
+    IMG_Init(IMG_INIT_PNG);
+
+    int width = px * CELL;
+    int height = px * CELL;
 
     SDL_Window *window = SDL_CreateWindow(
-        "Grid",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        px * CELL,
-        px * CELL,
-        0
+        "",
+        0,
+        0,
+        width,
+        height,
+        SDL_WINDOW_HIDDEN
     );
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_Renderer *renderer =
+        SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    SDL_Event e;
-    bool running = true;
+    SDL_Texture *target =
+        SDL_CreateTexture(
+            renderer,
+            SDL_PIXELFORMAT_RGBA32,
+            SDL_TEXTUREACCESS_TARGET,
+            width,
+            height
+        );
 
-    while (running)
+    SDL_SetRenderTarget(renderer, target);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    for (int y = 0; y < px; y++)
     {
-        while (SDL_PollEvent(&e))
-            if (e.type == SDL_QUIT)
-                running = false;
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-
-        for (int y = 0; y < px; y++)
+        for (int x = 0; x < px; x++)
         {
-            for (int x = 0; x < px; x++)
-            {
-                if (grid[y][x])
-                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-                else
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-                SDL_Rect r = {
-                    x * CELL,
-                    y * CELL,
-                    CELL,
-                    CELL
-                };
+            if (grid[y][x])
+                SDL_SetRenderDrawColor(renderer, 233, 111, 1, 255);
+            else
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
-                SDL_RenderFillRect(renderer, &r);
-            }
+            SDL_Rect r = {
+                x * CELL,
+                y * CELL,
+                CELL,
+                CELL
+            };
+
+            SDL_RenderFillRect(renderer, &r);
         }
-
-        SDL_RenderPresent(renderer);
     }
 
+    SDL_Surface *surface =
+        SDL_CreateRGBSurfaceWithFormat(
+            0,
+            width,
+            height,
+            32,
+            SDL_PIXELFORMAT_RGBA32
+        );
+
+    SDL_RenderReadPixels(
+        renderer,
+        NULL,
+        SDL_PIXELFORMAT_RGBA32,
+        surface->pixels,
+        surface->pitch
+    );
+
+    IMG_SavePNG(surface, "grid.png");
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(target);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+
+    IMG_Quit();
     SDL_Quit();
 }
