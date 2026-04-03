@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "./display.h"
 
+
 void rotate_image(int px, int grid[px][px]){
     for (int i = 0; i < px; i++) {
         for (int j = i + 1; j < px; j++) {
@@ -16,7 +17,7 @@ void rotate_image(int px, int grid[px][px]){
 void display(int px, int grid[px][px])
 {
     rotate_image(px, grid);
-     SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
 
     int width = px * CELL;
@@ -51,8 +52,10 @@ void display(int px, int grid[px][px])
     {
         for (int x = 0; x < px; x++)
         {
-            if (grid[y][x])
-                SDL_SetRenderDrawColor(renderer, 233, 111, 1, 255);
+            if (grid[y][x] == 1)
+                SDL_SetRenderDrawColor(renderer, 217, 79, 0, 255);
+            else if(grid[y][x] == 2)
+                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
             else
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 

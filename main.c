@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include "./ray_engine/ray_engine.h"
@@ -19,8 +20,8 @@ int main(void)
     //evolve every ray with ray_cast(double state[2][8], float dt, float tmax, float radius)
 
     double dt = 0.004;
-    double tmax = 3.0;
-    double radius = 1.2;
+    double tmax = 5.0;
+    double radius = 1.26;
 
     int ray_img[px][px];
     for(int i = 0; i < px; i++)
